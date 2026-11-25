@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>한자 몬스터 헌트</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;900&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef3ee;--card:#fff;--ink:#17302b;--mut:#5b7068;--board:#1f4a3f;--seal:#c8372d;--line:#cfdcd3;--ok:#1c7a4f;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101a17;--card:#18271f;--ink:#e6f0ea;--mut:#92a89d;--board:#2b6454;--line:#2c4238;--ok:#58c28e}}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 "Noto Sans KR",system-ui,sans-serif}
+main{max-width:640px;margin:0 auto;padding:16px}
+h1{font:900 26px/1.2 "Noto Serif KR",serif;margin:0}
+.top{background:var(--board);color:#fff;border-radius:14px;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.top small{opacity:.85;display:block}
+.bar{height:8px;background:rgba(255,255,255,.25);border-radius:4px;margin-top:8px;width:150px;overflow:hidden}
+.bar i{display:block;height:100%;background:#fff;width:0;transition:width .4s}
+.rank{font:900 18px "Noto Serif KR",serif;text-align:right}
+.tabs{display:flex;gap:8px;margin:14px 0}
+.tabs button{flex:1;padding:10px;border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;font-weight:700;font-size:14px;font-family:inherit;cursor:pointer}
+.tabs button[aria-selected=true]{border-color:var(--board);background:var(--board);color:#fff}
+button:focus-visible{outline:3px solid var(--seal);outline-offset:2px}
+.map{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.room{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;color:var(--ink);font-family:inherit}
+.room:hover{border-color:var(--board)}
+.room b{display:block;font-size:17px}.room span{font-size:30px;display:block}.room small{color:var(--mut)}
+.tip{color:var(--mut);font-size:14px;margin:12px 2px}
+.dex{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.cell{aspect-ratio:1;border:2px solid var(--line);border-radius:10px;background:var(--card);display:grid;place-items:center;font:900 28px "Noto Serif KR",serif;color:var(--mut);cursor:pointer}
+.cell.on{color:var(--ink);border-color:var(--seal)}
+.info{background:var(--card);border:2px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:12px;min-height:60px}
+.ov{position:fixed;inset:0;background:rgba(10,20,16,.6);display:none;align-items:center;justify-content:center;padding:16px;z-index:5}
+.ov.show{display:flex}
+.enc{background:var(--card);border-radius:18px;max-width:420px;width:100%;padding:20px;text-align:center;max-height:100%;overflow:auto}
+.big{font:900 96px/1.1 "Noto Serif KR",serif;margin:6px 0;transition:transform .3s}
+.big.pop{transform:scale(1.12);color:var(--seal)}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.opts button,.go{padding:12px 6px;border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;font:700 16px "Noto Sans KR",sans-serif;cursor:pointer}
+.opts button:disabled{opacity:.4;text-decoration:line-through}
+.opts button.right{background:var(--ok);color:#fff;border-color:var(--ok)}
+.go{background:var(--board);color:#fff;border-color:var(--board);width:100%;margin-top:14px}
+.balls{letter-spacing:4px;color:var(--seal);font-size:18px}
+.msg{min-height:52px;margin:8px 0 0;font-size:15px}
+.seal{display:inline-block;border:3px solid var(--seal);color:var(--seal);font:900 18px "Noto Serif KR",serif;padding:2px 10px;border-radius:6px;transform:rotate(-6deg)}
+.code{display:flex;gap:8px;margin-bottom:14px}.code input,#base{flex:1;min-width:0;padding:12px;border:2px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font-size:16px;font-family:inherit}.code .go{width:auto;margin:0;padding:12px 16px}
+#cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}.card{border:2px dashed var(--mut);border-radius:12px;padding:10px;text-align:center;background:var(--card);break-inside:avoid}.card .ch{font:900 64px/1.1 "Noto Serif KR",serif}.card .q{display:flex;justify-content:center;margin:6px 0}.card small{display:block;color:var(--mut)}
+@media print{.top,.tabs,#v1,#v2,#v3 .info{display:none!important}#cards{grid-template-columns:repeat(3,1fr);margin:0}.card{background:#fff;color:#000;border-color:#000}}
+.tabs button{padding:10px 2px}#gmap{width:100%;max-height:60vh;display:block;border-radius:12px;margin:12px 0}
+.near{animation:pl 1s infinite}@keyframes pl{50%{opacity:.55}}@media(prefers-reduced-motion:reduce){.near{animation:none}}
+.ar{position:fixed;inset:0;z-index:4;background:linear-gradient(#35566b,#1f3b33);overflow:hidden;touch-action:none}
+.ar video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ar .h{position:absolute;left:0;top:0;width:78px;height:78px;margin:-39px 0 0 -39px;border-radius:50%;background:rgba(255,255,255,.88);color:#17302b;display:grid;place-items:center;font:900 44px "Noto Serif KR",serif;box-shadow:0 0 18px rgba(255,255,255,.7);will-change:transform;cursor:pointer}
+.ar .h.on{background:#c8372d;color:#fff;box-shadow:0 0 28px #fff}
+.reticle{position:absolute;left:50%;top:50%;width:110px;height:110px;margin:-55px;border:3px dashed #fff;border-radius:50%;pointer-events:none}
+.arbar{position:absolute;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top,0px) + 12px) 14px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px;color:#fff;background:linear-gradient(rgba(0,0,0,.55),transparent);z-index:1}
+.arbar button{padding:8px 14px;border-radius:10px;border:0;font-size:15px;font-weight:700}
+.warn{background:#fff3cd;color:#5c4400;border:2px solid #e0b84a;border-radius:12px;padding:10px 14px;margin-top:12px;font-size:14px}
+details.info ol{margin:8px 0 0;padding-left:20px;font-size:14px}details.info summary{cursor:pointer}
+#rs{background:var(--card);color:var(--ink)}
+.gear{margin-top:6px;background:rgba(255,255,255,.2);color:#fff;border:0;border-radius:8px;padding:4px 10px;font-size:13px;cursor:pointer;font-family:inherit}
+.tm{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;background:var(--card);border:2px solid var(--line);border-radius:12px;padding:8px 12px;font-size:18px}.tm .go{width:auto;margin:0;padding:8px 16px}
+.f{display:block;margin-top:10px;font-size:14px;color:var(--mut)}.f input:not([type=checkbox]){display:block;width:100%;margin-top:4px;padding:10px;border:2px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font-size:16px;font-family:inherit}
+#gmap{height:62vh;min-height:320px;max-height:none;background:#222}
+.mk{width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;background:rgba(31,74,63,.88);color:#fff;border:2px solid #fff;display:grid;place-items:center;font:900 18px "Noto Serif KR",serif;box-shadow:0 0 6px rgba(0,0,0,.6);cursor:pointer}
+.mk.near{background:#c8372d}
+.me{width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:#2d8cff;border:3px solid #fff;box-shadow:0 0 8px #2d8cff}
+.sch{transform:translate(-50%,-160%);width:max-content;background:#ffd400;color:#111;font-weight:700;font-size:13px;padding:2px 8px;border-radius:8px;box-shadow:0 0 4px rgba(0,0,0,.6)}
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<meta name="description" content="학교를 돌아다니며 한자를 찾아 포획하는 한자 학습 게임">
+<meta name="theme-color" content="#1f4a3f">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🈶%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+<main>
+<div class="top">
+  <div><h1 id="ttl">한자 몬스터 헌트</h1><small id="cnt"></small><div class="bar"><i id="bar"></i></div></div>
+  <div style="text-align:right"><div class="rank" id="rank"></div><button class="gear" id="gear" aria-label="설정">⚙ 설정</button></div>
+</div>
+<div class="tm" id="tm" hidden><b id="tt"></b><button class="go" id="tg">게임 시작</button></div>
+<div class="tabs" role="tablist">
+  <button role="tab" id="t1" aria-selected="true">학교 탐험</button>
+  <button role="tab" id="t4" aria-selected="false">주변 탐색</button>
+  <button role="tab" id="t5" aria-selected="false">AR 찾기</button>
+  <button role="tab" id="t2" aria-selected="false">한자 도감</button>
+  <button role="tab" id="t3" aria-selected="false">카드 인쇄</button>
+</div>
+<section id="v1">
+  <div class="code"><input id="code" inputmode="numeric" maxlength="2" placeholder="카드 번호 (01~30)" aria-label="카드 번호"><button class="go" id="codeGo">카드 찾았다!</button></div>
+  <div class="map" id="map"></div>
+  <p class="tip">학교 곳곳에 숨겨진 한자 카드를 직접 찾아보세요. 카드의 QR을 스캔하거나 카드 번호를 입력하면 한자가 나타나요. 위의 장소는 카드 없이 연습하는 곳이에요.</p>
+</section>
+<section id="v2" hidden>
+  <div class="dex" id="dex"></div>
+  <div class="info" id="info">잡은 한자를 누르면 설명이 보여요.</div>
+  <button class="go" id="rs">진행 기록 지우기</button>
+  <div class="info" id="sb" hidden style="margin-top:12px"><b>선생님께 결과 제출</b>
+  <label class="f">내 이름(또는 번호, 별명)<input id="sn" maxlength="20"></label>
+  <button class="go" id="sg">결과 제출</button><div class="msg" id="sm" style="min-height:24px"></div></div>
+</section>
+<section id="v5" hidden>
+  <div class="info">카메라를 켜고 주변을 둘러보면 사방에 한자가 떠 있어요. 폰을 돌리거나 화면을 끌어 방향을 바꾸고, 한자를 화면 가운데 원에 맞춘 뒤 눌러서 포획하세요.</div>
+  <button class="go" id="arstart">AR 시작</button>
+  <p class="tip">처음 시작할 때 카메라와 모션 센서 권한을 허용해 주세요. 카메라가 안 되면 가상 배경으로 플레이해요.</p>
+</section>
+<section id="v4" hidden>
+  <div class="info" id="gs">위성 사진 속 신도중학교를 보며 걸어 다니세요. 지도에 나타난 한자에 가까이 다가가 눌러서 포획해요. 위치가 안 될 때는 지도를 눌러 그 자리로 이동할 수 있어요.</div>
+  <div class="code" style="margin-top:12px"><button class="go" id="gstart">위치로 시작</button><button class="go" id="grst">학교 중심으로</button></div>
+  <div id="gmap" role="img" aria-label="신도중학교 위성 지도"></div>
+  <p class="tip" id="gleg">노란 점선은 학교 부지, 주황은 건물, 초록은 운동장과 트랙이에요. 지도 오른쪽 위 버튼에서 위성 사진과 일반 지도를 바꾸고, 윤곽과 한자를 켜고 끌 수 있어요.</p>
+  <p class="tip" id="gn"></p>
+  <div class="tip">위치 기능이 안 될 때는 지도를 눌러 그 자리로 이동하거나(연습 모드) 아래 버튼으로 10m씩 움직여 보세요.</div>
+  <div class="code"><button class="go" id="gn1">북</button><button class="go" id="gw1">서</button><button class="go" id="ge1">동</button><button class="go" id="gs1">남</button></div>
+</section>
+<section id="v3" hidden>
+  <div class="warn" id="fw" hidden>지금은 내 컴퓨터의 파일로 열려 있어요. 이 상태의 주소는 학생 폰에서 열리지 않아서 QR이 작동하지 않아요. 파일을 웹에 올린 뒤 그 주소를 아래 앱 주소 칸에 입력하세요.</div>
+  <details class="info"><summary><b>학생들과 함께 쓰는 방법</b></summary><ol>
+  <li>이 HTML 파일 하나를 웹에 올려요. Netlify Drop, GitHub Pages 같은 무료 호스팅이나 학교 서버 모두 괜찮아요.</li>
+  <li>주소가 https로 시작해야 위치, 카메라, 모션 센서가 작동해요.</li>
+  <li>그 주소를 아래 앱 주소 칸에 넣고 카드 다시 만들기를 눌러 인쇄해요.</li>
+  <li>학생은 각자 폰에서 그 주소를 열거나 카드의 QR을 스캔해요. 진행 기록은 각자의 폰에 저장돼요.</li>
+  <li>PC에서 파일을 바로 열면 학교 탐험과 도감만 쓸 수 있어요.</li></ol></details>
+  <div class="info">선생님용: 카드를 인쇄해서 약 15m(어린이 걸음으로 20걸음)마다 한 장씩 붙여 주세요. 카드에는 한자와 QR만 있고 뜻은 없어서, 학생이 앱에서 직접 맞혀야 해요.<br><br><label>앱 주소 <input id="base"></label>
+  <button class="go" id="mk">카드 다시 만들기</button><button class="go" id="pr">인쇄하기</button></div>
+  <div id="cards"></div>
+</section>
+</main>
+<div class="ov" id="st" style="z-index:6"><div class="enc" style="text-align:left">
+<h2 style="margin:0 0 4px;font:900 20px 'Noto Serif KR',serif">기본 설정</h2>
+<label class="f">게임 제목<input id="s_t" maxlength="20"></label>
+<label class="f">제한 시간(분, 0이면 시간 제한 없음)<input id="s_m" type="number" min="0" max="60"></label>
+<label class="f">한자볼 개수(1~5)<input id="s_b" type="number" min="1" max="5"></label>
+<label class="f">포획 거리(m, 5~30)<input id="s_r" type="number" min="5" max="30"></label>
+<label class="f">AR에 동시에 나타나는 한자 수(3~8)<input id="s_a" type="number" min="3" max="8"></label>
+<label class="f">학교 위치 - 위도<input id="s_lat" inputmode="decimal"></label>
+<label class="f">학교 위치 - 경도<input id="s_lng" inputmode="decimal"></label>
+<label class="f">구글 시트 결과 수집 주소 (선택, Apps Script 웹 앱 주소)<input id="s_k" inputmode="url" placeholder="https://script.google.com/macros/s/.../exec"></label>
+<label class="f"><input id="s_h" type="checkbox"> 틀렸을 때 힌트 보여 주기</label>
+<label class="f">설정이 담긴 공유 링크 (학생에게 보내거나 카드 QR에 사용)<input id="s_l" readonly></label>
+<button class="go" id="s_hj" style="background:var(--bg);color:var(--ink);margin-top:12px">한자 목록 입력·수정</button>
+<button class="go" id="s_ok">저장</button>
+<div class="code" style="margin:10px 0 0"><button class="go" id="s_d" style="flex:1">기본값</button><button class="go" id="s_x" style="flex:1;background:var(--bg);color:var(--ink)">닫기</button></div>
+</div></div>
+<div class="ov" id="hj" style="z-index:7"><div class="enc" style="text-align:left">
+<h2 style="margin:0 0 4px;font:900 20px 'Noto Serif KR',serif">한자 목록 입력</h2>
+<p class="f" style="margin:6px 0">한 줄에 한자 하나씩 적어 주세요. 한자, 훈음, 힌트를 쉼표나 탭으로 나누고, 힌트는 비워도 돼요. 예) <b>學, 배울 학, 아이가 배우는 모습</b> (4~60개)</p>
+<textarea id="h_t" rows="14" style="width:100%;padding:10px;border:2px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font-size:15px;font-family:inherit"></textarea>
+<div class="msg" id="h_m"></div>
+<p class="f" style="margin:0 0 6px">학생들과 같은 목록을 쓰려면 설정의 공유 링크를 보내 주세요. 링크를 한 번 열면 그 기기에 목록이 저장돼요. 목록에서 빠진 한자는 도감 기록에서도 사라져요.</p>
+<button class="go" id="h_ok">목록 저장</button>
+<div class="code" style="margin:10px 0 0"><button class="go" id="h_d" style="flex:1">기본 30개로</button><button class="go" id="h_x" style="flex:1;background:var(--bg);color:var(--ink)">닫기</button></div>
+</div></div>
+<div class="ov" id="rv" style="z-index:6"><div class="enc" id="rvc"></div></div>
+<div class="ar" id="ar" hidden><video id="arv" playsinline muted autoplay></video><div id="arw"></div><div class="reticle"></div><div class="arbar"><span id="arm"></span><button id="arx">닫기</button></div></div>
+<div class="ov" id="ov"><div class="enc" id="enc" role="dialog" aria-live="polite"></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+const L={classroom:["교실","🏫"],field:["운동장","⚽"],music:["2층 복도","2️⃣"],lab:["3층 복도","3️⃣"]};
+const D=[
+["學","배울 학","classroom","아이(子)가 지붕 아래서 배우는 모습이에요."],
+["校","학교 교","classroom","나무(木)로 지은 사귀는(交) 곳, 학교예요."],
+["先","먼저 선","classroom","먼저 앞서 걷는 사람, 선생님의 先이에요."],
+["生","날 생","classroom","땅에서 새싹이 돋아나는 모양이에요."],
+["敎","가르칠 교","classroom","회초리를 들고 아이를 가르치는 모습이에요."],
+["書","글 서","library","붓(聿)으로 글을 쓰는 모습이에요."],
+["文","글월 문","library","글자와 무늬를 뜻해요. 문학의 文!"],
+["字","글자 자","library","집(宀) 안에서 아이(子)가 글자를 익혀요."],
+["本","근본 본","library","나무(木) 뿌리에 표시를 한 모양이에요."],
+["讀","읽을 독","library","말씀(言)을 소리 내어 읽는 거예요."],
+["食","밥 식","lunch","뚜껑 덮인 밥그릇 모양이에요."],
+["米","쌀 미","lunch","쌀알이 사방으로 흩어진 모양이에요."],
+["水","물 수","lunch","흘러가는 물줄기를 그렸어요."],
+["口","입 구","lunch","벌린 입 모양이에요."],
+["肉","고기 육","lunch","고깃덩이 속 결을 그린 글자예요."],
+["運","옮길 운","field","달려가며(辶) 군대(軍)가 이동해요. 운동의 運!"],
+["動","움직일 동","field","무거운 것(重)에 힘(力)을 줘서 움직여요."],
+["足","발 족","field","무릎과 발을 그린 모양이에요."],
+["力","힘 력","field","팔에 힘을 준 근육 모양이에요."],
+["大","큰 대","field","사람이 팔다리를 크게 벌린 모습이에요."],
+["樂","노래 악","music","나무 받침 위에 북과 악기를 단 모양이에요."],
+["音","소리 음","music","입(口)에서 나오는 소리를 표현했어요."],
+["歌","노래 가","music","입 벌려(欠) 노래하는 모습이에요."],
+["心","마음 심","music","심장을 본뜬 글자예요. 마음을 뜻해요."],
+["耳","귀 이","music","사람 귀를 본뜬 글자예요."],
+["火","불 화","lab","타오르는 불꽃 모양이에요."],
+["木","나무 목","lab","줄기와 가지, 뿌리가 있는 나무예요."],
+["金","쇠 금","lab","땅속에 금속 덩어리가 박힌 모양이에요."],
+["土","흙 토","lab","땅 위로 솟아오른 흙더미예요."],
+["日","날 일","lab","해를 본떴어요. 하루(날)도 뜻해요."]
+];
+const $=id=>document.getElementById(id);
+let got=new Set(),cur=null,tries=3,locked=false;
+try{got=new Set(JSON.parse(localStorage.getItem("hanja-dex")||"[]"))}catch(e){}
+function save(){try{localStorage.setItem("hanja-dex",JSON.stringify([...got]))}catch(e){}}
+const ranks=[[0,"새내기"],[5,"견습 탐험가"],[15,"한자 트레이너"],[30,"한자 마스터"]];
+function head(){
+  const n=got.size;$("cnt").textContent="도감 "+n+" / "+D.length;$("bar").style.width=(n/D.length*100)+"%";
+  $("rank").textContent=[...ranks].reverse().find(r=>n>=r[0])[1];
+}
+function map(){
+  $("map").innerHTML=Object.keys(L).map(k=>{
+    const c=D.filter(d=>d[2]==k),g=c.filter(d=>got.has(d[0])).length;
+    return `<button class="room" data-k="${k}"><span>${L[k][1]}</span><b>${L[k][0]}</b><small>${g} / ${c.length} 잡음</small></button>`}).join("");
+  document.querySelectorAll(".room").forEach(b=>b.onclick=()=>meet(b.dataset.k));
+}
+function dex(){
+  $("dex").innerHTML=D.map((d,i)=>`<button class="cell ${got.has(d[0])?"on":""}" data-i="${i}" aria-label="${got.has(d[0])?d[1]:"아직 못 잡음"}">${got.has(d[0])?d[0]:"?"}</button>`).join("");
+  document.querySelectorAll(".cell").forEach(b=>b.onclick=()=>{
+    const d=D[b.dataset.i];
+    $("info").innerHTML=got.has(d[0])?`<b style="font:900 22px 'Noto Serif KR',serif">${d[0]}</b> ${d[1]}<br>${d[3]||""}<br><small>${L[d[2]][1]} ${L[d[2]][0]}에서 발견</small>`:"아직 만나지 못한 한자예요. "+L[d[2]][1]+" "+L[d[2]][0]+"에서 찾아보세요.";
+  });
+}
+const shuf=a=>a.map(x=>[Math.random(),x]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
+function balls(){return "●".repeat(tries)+"○".repeat(S.balls-tries)}
+function meet(k,f){
+  if(gOver){showResult();return}
+  const pool=D.filter(d=>d[2]==k),un=pool.filter(d=>!got.has(d[0])),src=un.length?un:pool;
+  cur=f||src[Math.floor(Math.random()*src.length)];tries=S.balls;locked=false;
+  const opts=shuf([cur[1],...shuf(D.filter(d=>d[1]!=cur[1])).slice(0,3).map(d=>d[1])]);
+  $("enc").innerHTML=`<div>${L[k][1]} ${L[k][0]}에서 야생 한자가 나타났다!</div>
+  <div class="big" id="big">${cur[0]}</div>
+  <div>이 한자의 뜻과 음은?</div>
+  <div class="opts">${opts.map(o=>`<button data-o="${o}">${o}</button>`).join("")}</div>
+  <div class="msg" id="msg">${got.has(cur[0])?"이미 잡은 한자예요. 복습해 볼까요?":""}</div>
+  <div class="balls" id="balls" aria-label="남은 한자볼">${balls()}</div>`;
+  document.querySelectorAll(".opts button").forEach(b=>b.onclick=()=>pick(b));
+  $("ov").classList.add("show");
+}
+function done(txt){
+  locked=true;$("msg").innerHTML=txt;
+  $("enc").insertAdjacentHTML("beforeend",`<button class="go" id="close">계속 탐험하기</button>`);
+  $("close").onclick=()=>{$("ov").classList.remove("show");head();map();dex();gaft();try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}};
+  $("close").focus();
+}
+function pick(b){
+  if(locked)return;
+  if(b.dataset.o==cur[1]){
+    b.classList.add("right");if(!got.has(cur[0]))sess++;got.add(cur[0]);save();$("big").classList.add("pop");
+    done(`<span class="seal">잡았다!</span><br>${cur[3]||cur[0]+" = "+cur[1]}`);
+  }else{
+    b.disabled=true;tries--;$("balls").textContent=balls();
+    if(tries<=0){
+      document.querySelectorAll(".opts button").forEach(x=>{if(x.dataset.o==cur[1])x.classList.add("right")});
+      done(`${cur[0]}이(가) 도망갔어요. 정답은 <b>${cur[1]}</b>. ${cur[3]||""}`);
+    }else $("msg").textContent=S.hint?"힌트: "+(cur[3]||"뜻이 '"+cur[1][0]+"'(으)로 시작해요."):"다시 골라 보세요.";
+  }
+}
+function tab(n){
+  $("v1").hidden=n!=1;$("v2").hidden=n!=2;$("v3").hidden=n!=3;$("v4").hidden=n!=4;$("v5").hidden=n!=5;
+  [1,2,3,4,5].forEach(i=>$("t"+i).setAttribute("aria-selected",n==i));
+  if(n==3)mk();if(n==4){gmapInit();gdraw()}
+}
+function mk(){
+  const b=$("base").value.trim().split("#")[0],pad=i=>String(i+1).padStart(2,"0");
+  if(!b){$("cards").innerHTML='<p class="tip">위 칸에 웹에 올린 앱 주소를 입력한 뒤 카드 다시 만들기를 누르세요.</p>';return}
+  $("cards").innerHTML=D.map((d,i)=>`<div class="card"><div class="ch">${d[0]}</div><div class="q" id="q${i}"></div><b>No.${pad(i)}</b><small>${L[d[2]][0]} 근처</small></div>`).join("");
+  D.forEach((d,i)=>{try{new QRCode($("q"+i),{text:b+"#c"+pad(i),width:104,height:104})}catch(e){$("q"+i).textContent="#c"+pad(i)}});
+}
+function hash(){
+  const m=/^#c(\d+)$/.exec(location.hash);
+  if(m){const d=D[parseInt(m[1],10)-1];if(d){tab(1);meet(d[2],d)}}
+}
+$("t1").onclick=()=>tab(1);$("t2").onclick=()=>tab(2);$("t3").onclick=()=>tab(3);
+$("mk").onclick=mk;$("pr").onclick=()=>{try{window.print()}catch(e){}};
+$("codeGo").onclick=()=>{
+  const d=D[parseInt($("code").value,10)-1];
+  if(d){meet(d[2],d)}else $("code").placeholder="1~"+D.length+" 사이 번호를 입력하세요";
+  $("code").value="";
+};
+try{$("base").value=location.href.split("#")[0]}catch(e){}
+const R=8;let org=null,me=[0,0],armed=D.map(()=>true),wid=null;
+const pt=i=>[(i%6-2.5)*20,(Math.floor(i/6)-2)*20];
+function gmsg(t){$("gs").textContent=t}
+function gdraw(){
+  let s=`<rect x="-75" y="-75" width="150" height="150" style="fill:var(--card);stroke:var(--line)"/>`;
+  D.forEach((d,i)=>{const p=pt(i),c=got.has(d[0]);s+=`<circle cx="${p[0]}" cy="${-p[1]}" r="${R}" style="fill:none;stroke:var(--line)" stroke-dasharray="2 2"/><text x="${p[0]}" y="${-p[1]+4}" text-anchor="middle" font-size="11" font-weight="900" style="fill:${c?"var(--seal)":"var(--mut)"}">${c?d[0]:"?"}</text>`});
+  s+=`<circle cx="${me[0]}" cy="${-me[1]}" r="3" style="fill:var(--board);stroke:var(--ink)"/>`;
+  $("gmap").innerHTML=s;
+  let b=null;
+  D.forEach((d,i)=>{if(got.has(d[0]))return;const p=pt(i),dx=p[0]-me[0],dy=p[1]-me[1],m=Math.hypot(dx,dy);if(!b||m<b.m)b={m,dx,dy}});
+  if(!b)$("gn").textContent="모든 한자를 잡았어요!";
+  else{const a=(Math.atan2(b.dx,b.dy)*180/Math.PI+360)%360;$("gn").textContent="가장 가까운 한자: "+["북","북동","동","남동","남","남서","서","북서"][Math.round(a/45)%8]+"쪽 약 "+Math.round(b.m)+"m"}
+}
+function gcheck(){
+  D.forEach((d,i)=>{const p=pt(i);if(Math.hypot(p[0]-me[0],p[1]-me[1])>R+4)armed[i]=true});
+  if($("ov").classList.contains("show"))return;
+  for(let i=0;i<D.length;i++){
+    const p=pt(i);
+    if(!got.has(D[i][0])&&armed[i]&&Math.hypot(p[0]-me[0],p[1]-me[1])<=R){armed[i]=false;meet(D[i][2],D[i]);return}
+  }
+}
+function gupd(lat,lon){
+  if(!org)org=[lat,lon];
+  me=[(lon-org[1])*111320*Math.cos(org[0]*Math.PI/180),(lat-org[0])*110540];
+  gmsg("위치를 따라가는 중이에요. 걸어서 한자를 찾아보세요.");gcheck();gdraw();
+}
+function gstop(){if(wid!=null&&navigator.geolocation){navigator.geolocation.clearWatch(wid);wid=null}}
+$("gstart").onclick=()=>{
+  if(!navigator.geolocation){gmsg("이 기기에서는 위치 기능을 쓸 수 없어요. 아래 연습 모드를 사용하세요.");return}
+  gstop();org=null;me=[0,0];armed=D.map(()=>true);gmsg("위치를 찾는 중이에요...");
+  wid=navigator.geolocation.watchPosition(p=>gupd(p.coords.latitude,p.coords.longitude),()=>gmsg("위치를 가져오지 못했어요. 위치 권한을 허용하거나 아래 연습 모드를 사용하세요."),{enableHighAccuracy:true,maximumAge:1000});
+};
+$("grst").onclick=()=>{org=null;me=[0,0];armed=D.map(()=>true);gmsg("지금 있는 곳이 새 기준점이에요.");gdraw()};
+function gmove(dx,dy){gstop();me=[me[0]+dx,me[1]+dy];gmsg("연습 모드: 10m씩 이동 중이에요.");gcheck();gdraw()}
+$("gn1").onclick=()=>gmove(0,10);$("gs1").onclick=()=>gmove(0,-10);$("ge1").onclick=()=>gmove(10,0);$("gw1").onclick=()=>gmove(-10,0);
+let RG=10;let spawns=[],curSpawn=null,walked=0;
+function ensure(){
+  spawns=spawns.filter(s=>!got.has(D[s.i][0]));
+  const used=new Set(spawns.map(s=>s.i)),pool=D.map((d,i)=>i).filter(i=>!got.has(D[i][0])&&!used.has(i));
+  while(spawns.length<8&&pool.length){
+    const i=pool.splice(Math.floor(Math.random()*pool.length),1)[0];let x,y,t=0;
+    do{const a=Math.random()*6.283,r=10+Math.random()*60;x=Math.cos(a)*r;y=Math.sin(a)*r;t++}while(t<10&&spawns.some(s=>Math.hypot(s.x-x,s.y-y)<12));
+    spawns.push({i,x,y});
+  }
+}
+function gdraw(){
+  ensure();
+  const cx=me[0],cy=-me[1];
+  $('gmap').setAttribute('viewBox',(cx-60)+' '+(cy-60)+' 120 120');
+  let s=`<rect x='${cx-60}' y='${cy-60}' width='120' height='120' style='fill:var(--card)'/>`;
+  for(let g=Math.floor((cx-60)/20)*20;g<=cx+60;g+=20)s+=`<line x1='${g}' y1='${cy-60}' x2='${g}' y2='${cy+60}' style='stroke:var(--line)' stroke-width='.4'/>`;
+  for(let g=Math.floor((cy-60)/20)*20;g<=cy+60;g+=20)s+=`<line x1='${cx-60}' y1='${g}' x2='${cx+60}' y2='${g}' style='stroke:var(--line)' stroke-width='.4'/>`;
+  s+=`<circle cx='${cx}' cy='${cy}' r='${RG}' style='fill:none;stroke:var(--board)' stroke-dasharray='2 2'/>`;
+  spawns.forEach((p,k)=>{
+    const near=Math.hypot(p.x-me[0],p.y-me[1])<=RG;
+    s+=`<g data-s='${k}' class='${near?'near':''}' style='cursor:pointer'><circle cx='${p.x}' cy='${-p.y}' r='7' style='fill:${near?'var(--seal)':'var(--board)'}' stroke='#fff' stroke-width='1'/><text x='${p.x}' y='${-p.y+4}' text-anchor='middle' font-size='10' font-weight='900' fill='#fff'>${D[p.i][0]}</text></g>`;
+  });
+  s+=`<circle cx='${cx}' cy='${cy}' r='3.5' fill='#fff' style='stroke:var(--seal)' stroke-width='1.5'/>`;
+  $('gmap').innerHTML=s;
+  let b=null;
+  spawns.forEach(p=>{const dx=p.x-me[0],dy=p.y-me[1],m=Math.hypot(dx,dy);if(!b||m<b.m)b={m,dx,dy}});
+  const w=' · 걸은 거리 '+Math.round(walked)+'m';
+  if(!b)$('gn').textContent='모든 한자를 잡았어요!'+w;
+  else{const a=(Math.atan2(b.dx,b.dy)*180/Math.PI+360)%360;$('gn').textContent='가장 가까운 한자: '+['북','북동','동','남동','남','남서','서','북서'][Math.round(a/45)%8]+'쪽 약 '+Math.round(b.m)+'m'+w}
+}
+function gcheck(){}
+function gaft(){if(curSpawn){spawns=spawns.filter(s=>s!==curSpawn);curSpawn=null}arAfter();gdraw()}
+function gupd(lat,lon){
+  if(!org)org=[lat,lon];
+  const n=[(lon-org[1])*111320*Math.cos(org[0]*Math.PI/180),(lat-org[0])*110540],d=Math.hypot(n[0]-me[0],n[1]-me[1]);
+  if(d>2)walked+=d;me=n;gmsg('걸어 다니며 지도에 나타난 한자를 찾아보세요.');gdraw();
+}
+function gmove(dx,dy){gstop();me=[me[0]+dx,me[1]+dy];walked+=10;gmsg('연습 모드: 10m씩 이동 중이에요.');gdraw()}
+$('gstart').onclick=()=>{
+  if(!navigator.geolocation||!window.isSecureContext){gmsg('위치 기능은 https 주소에서만 쓸 수 있어요. 연습 모드를 사용하세요.');return}
+  gstop();org=null;me=[0,0];spawns=[];walked=0;gmsg('위치를 찾는 중이에요...');gdraw();
+  wid=navigator.geolocation.watchPosition(p=>gupd(p.coords.latitude,p.coords.longitude),()=>gmsg('위치를 가져오지 못했어요. 위치 권한을 허용하거나 연습 모드를 사용하세요.'),{enableHighAccuracy:true,maximumAge:1000});
+};
+$('grst').onclick=()=>{org=null;me=[0,0];spawns=[];gmsg('지금 있는 곳이 새 기준점이에요.');gdraw()};
+$('gmap').onclick=e=>{
+  const g=e.target.closest('[data-s]');
+  if(g){
+    const p=spawns[+g.dataset.s],d=Math.hypot(p.x-me[0],p.y-me[1]);
+    if(d<=RG){curSpawn=p;meet(D[p.i][2],D[p.i])}else gmsg('한자가 아직 멀어요. '+Math.round(d-RG)+'m 더 가까이 가 보세요.');
+    return;
+  }
+  if(wid==null){
+    const sv=$('gmap'),q0=sv.createSVGPoint();q0.x=e.clientX;q0.y=e.clientY;
+    const q=q0.matrixTransform(sv.getScreenCTM().inverse());
+    walked+=Math.hypot(q.x-me[0],-q.y-me[1]);me=[q.x,-q.y];gmsg('연습 모드: 누른 자리로 이동했어요.');gdraw();
+  }
+};
+let arOn=false,arH=[],arYaw=0,arPit=0,arRaf=0,arCur=null,arStream=null,arGyro=false,dg=null;
+const wrap=a=>((a%360)+540)%360-180,clampP=p=>Math.max(-60,Math.min(80,p));
+function arStat(){$('arm').textContent=arH.length?'한자를 화면 가운데 원에 맞추고 눌러요 · '+got.size+'/'+D.length:'모든 한자를 잡았어요!'}
+function arSpawn(){
+  const used=new Set(arH.map(h=>h.i)),pool=D.map((d,i)=>i).filter(i=>!got.has(D[i][0])&&!used.has(i));
+  while(arH.length<S.ar&&pool.length){
+    const i=pool.splice(Math.floor(Math.random()*pool.length),1)[0],el=document.createElement('div');
+    el.className='h';el.textContent=D[i][0];
+    const h={i,yaw:Math.random()*360,pit:Math.random()*40-10,el};
+    el.onclick=()=>arTap(h);$('arw').appendChild(el);arH.push(h);
+  }
+}
+function arTap(h){
+  const dx=wrap(h.yaw-arYaw),dy=h.pit-arPit;
+  if(Math.abs(dx)<14&&Math.abs(dy)<14){arCur=h;meet(D[h.i][2],D[h.i])}
+  else $('arm').textContent='한자를 화면 가운데 원에 맞춰 보세요.';
+}
+function arAfter(){
+  if(!arCur)return;
+  arCur.el.remove();arH=arH.filter(h=>h!==arCur);arCur=null;arSpawn();arStat();
+}
+function arLoop(){
+  const W=innerWidth,H=innerHeight,k=W/60;
+  arH.forEach(h=>{
+    const dx=wrap(h.yaw-arYaw),dy=h.pit-arPit,on=Math.abs(dx)<14&&Math.abs(dy)<14;
+    h.el.style.transform='translate('+(W/2+dx*k)+'px,'+(H/2-dy*k)+'px)';
+    h.el.style.display=Math.abs(dx)>60?'none':'grid';h.el.classList.toggle('on',on);
+  });
+  arRaf=requestAnimationFrame(arLoop);
+}
+function arOri(e){
+  const hd=e.webkitCompassHeading!=null?e.webkitCompassHeading:(e.alpha!=null?360-e.alpha:null);
+  if(hd==null)return;
+  arGyro=true;arYaw=hd;if(e.beta!=null)arPit=clampP(e.beta-90);
+}
+async function arStart(){
+  arOn=true;$('ar').hidden=false;arH=[];$('arw').innerHTML='';arYaw=Math.random()*360;arPit=0;arGyro=false;
+  arSpawn();arStat();
+  try{if(window.DeviceOrientationEvent&&typeof DeviceOrientationEvent.requestPermission==='function')await DeviceOrientationEvent.requestPermission()}catch(e){}
+  window.addEventListener('deviceorientation',arOri,true);
+  try{
+    arStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+    $('arv').srcObject=arStream;$('arv').style.display='block';$('arv').play().catch(()=>{});
+  }catch(e){$('arv').style.display='none';$('arm').textContent='카메라를 쓸 수 없어 가상 배경으로 시작해요. 화면을 끌어 둘러보세요.'}
+  cancelAnimationFrame(arRaf);arLoop();
+}
+function arStop(){
+  arOn=false;$('ar').hidden=true;cancelAnimationFrame(arRaf);
+  window.removeEventListener('deviceorientation',arOri,true);
+  if(arStream){arStream.getTracks().forEach(t=>t.stop());arStream=null}
+}
+$('arstart').onclick=arStart;$('arx').onclick=arStop;$('t5').onclick=()=>tab(5);
+$('ar').onpointerdown=e=>{dg=[e.clientX,e.clientY]};
+window.addEventListener('pointermove',e=>{
+  if(!dg||!arOn||arGyro)return;
+  const k=innerWidth/60;arYaw=(arYaw-(e.clientX-dg[0])/k+360)%360;arPit=clampP(arPit+(e.clientY-dg[1])/k);dg=[e.clientX,e.clientY];
+});
+window.addEventListener('pointerup',()=>{dg=null});
+if(location.protocol==='file:'){$('fw').hidden=false;$('base').value='';$('base').placeholder='https://웹에 올린 주소를 입력하세요'}
+let rsw=false;
+$('rs').onclick=()=>{
+  if(!rsw){rsw=true;$('rs').textContent='한 번 더 누르면 모든 기록이 지워져요';return}
+  got=new Set();save();rsw=false;$('rs').textContent='진행 기록 지우기';head();map();dex();gdraw();
+};
+const DEF={title:'한자 몬스터 헌트',min:0,balls:3,hint:true,rad:10,ar:5,lat:35.17058579,lng:129.1674405,hook:''};
+const cl=(v,a,b,d)=>{v=parseInt(v,10);return isNaN(v)?d:Math.max(a,Math.min(b,v))};
+const num=(v,d,a,b)=>{const n=parseFloat(v);return isFinite(n)?Math.max(a,Math.min(b,n)):d};
+const hk=v=>/^https:\/\/script\.google\.com\/(a\/macros\/[\w.-]+|macros)\/s\/[\w-]+\/exec$/.test(String(v||'').trim())?String(v).trim():'';
+const norm=o=>({title:String(o.title||DEF.title).slice(0,20),min:cl(o.min,0,60,DEF.min),balls:cl(o.balls,1,5,DEF.balls),hint:!(o.hint===false||o.hint==='0'||o.hint===0),rad:cl(o.rad,5,30,DEF.rad),ar:cl(o.ar,3,8,DEF.ar),lat:num(o.lat,DEF.lat,-90,90),lng:num(o.lng,DEF.lng,-180,180),hook:hk(o.hook)});
+let S=norm(DEF),gOver=false,gEnd=0,gTmr=null,sess=0;
+const saveS=()=>{try{localStorage.setItem('hanja-set',JSON.stringify(S))}catch(e){}};
+try{S=norm(JSON.parse(localStorage.getItem('hanja-set')||'{}'))}catch(e){}
+try{const q=new URLSearchParams(location.search);if(q.has('balls')||q.has('min')||q.has('title')){S=norm({title:q.get('title'),min:q.get('min'),balls:q.get('balls'),hint:q.get('hint'),rad:q.get('rad'),ar:q.get('ar'),lat:q.get('lat'),lng:q.get('lng'),hook:q.get('hook')});saveS()}}catch(e){}
+const mkLink=(o,w)=>location.href.split('#')[0].split('?')[0]+'?'+new URLSearchParams({title:o.title,min:o.min,balls:o.balls,hint:o.hint?1:0,rad:o.rad,ar:o.ar,lat:o.lat,lng:o.lng,...(o.hook?{hook:o.hook}:{}),...(w&&isCustom()?{list:encL(rowsOf())}:{})});
+const rd=()=>norm({title:$('s_t').value.trim(),min:$('s_m').value,balls:$('s_b').value,hint:$('s_h').checked,rad:$('s_r').value,ar:$('s_a').value,lat:$('s_lat').value,lng:$('s_lng').value,hook:$('s_k').value});
+function fill(o){$('s_t').value=o.title;$('s_m').value=o.min;$('s_b').value=o.balls;$('s_r').value=o.rad;$('s_a').value=o.ar;$('s_lat').value=o.lat;$('s_lng').value=o.lng;$('s_k').value=o.hook;$('s_h').checked=o.hint;$('s_l').value=mkLink(o,true)}
+const fmt=ms=>{const t=Math.ceil(ms/1000);return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0')};
+function applyS(){
+  $('ttl').textContent=S.title;document.title=S.title;RG=S.rad;setSch();hookUI();
+  $('tm').hidden=S.min<=0;
+  if(S.min<=0){clearInterval(gTmr);gTmr=null;gOver=false}
+  else if(!gTmr){$('tt').textContent='⏱ '+S.min+':00';$('tg').textContent=gOver?'다시 시작':'게임 시작'}
+}
+function gameTick(){const r=gEnd-Date.now();if(r<=0)gameEnd();else $('tt').textContent='⏱ '+fmt(r)}
+function gameBegin(){sess=0;gOver=false;gEnd=Date.now()+S.min*60000;clearInterval(gTmr);gTmr=setInterval(gameTick,300);gameTick();$('tg').textContent='그만하기'}
+function gameEnd(){
+  clearInterval(gTmr);gTmr=null;gOver=true;locked=true;$('ov').classList.remove('show');
+  if(arOn)arStop();
+  $('tt').textContent='⏱ 00:00';$('tg').textContent='다시 시작';showResult();
+  if(S.hook&&$('sn').value.trim())sendR();
+}
+function showResult(){
+  $('rvc').innerHTML='<div class="big" style="font-size:64px">⏱</div><h2 style="margin:0">시간 끝!</h2><p>이번 판에 잡은 한자 <b>'+sess+'개</b><br>도감 '+got.size+' / '+D.length+'</p><button class="go" id="rv_a">다시 하기</button><button class="go" id="rv_x" style="background:var(--bg);color:var(--ink)">닫기</button>';
+  $('rv').classList.add('show');
+  $('rv_a').onclick=()=>{$('rv').classList.remove('show');gameBegin()};
+  $('rv_x').onclick=()=>$('rv').classList.remove('show');
+}
+$('tg').onclick=()=>gTmr?gameEnd():gameBegin();
+$('gear').onclick=()=>{fill(S);$('st').classList.add('show')};
+$('st').oninput=()=>{$('s_l').value=mkLink(rd(),true)};
+$('s_x').onclick=()=>$('st').classList.remove('show');
+$('s_d').onclick=()=>fill(norm(DEF));
+$('s_ok').onclick=()=>{S=rd();saveS();applyS();if(location.protocol!=='file:')$('base').value=mkLink(S);$('st').classList.remove('show')};
+if(location.protocol!=='file:'&&location.search)$('base').value=mkLink(S);
+applyS();
+var SCH,LM,gl,fl,sm,fdone='',far=false;
+const mPerLng=()=>111320*Math.cos(SCH[0]*Math.PI/180);
+const toLL=(x,y)=>[SCH[0]+y/110540,SCH[1]+x/mPerLng()];
+function setSch(){
+  const ch=SCH&&(SCH[0]!==S.lat||SCH[1]!==S.lng);
+  SCH=[S.lat,S.lng];org=SCH;
+  if(ch){spawns=[];me=[0,0];if(LM){LM.setView(SCH,18);sm.setLatLng(SCH);fl.clearLayers();fdone='';gfeat();gdraw()}}
+}
+async function gfeat(){
+  if(fdone===SCH.join())return;fdone=SCH.join();
+  const q='[out:json][timeout:20];(way["amenity"="school"](around:300,'+SCH+');way["building"](around:220,'+SCH+');way["leisure"~"pitch|track"](around:220,'+SCH+'););out geom tags;';
+  try{
+    const r=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(q)});
+    const j=await r.json();let n=0;
+    j.elements.forEach(e=>{
+      if(!e.geometry)return;
+      const t=e.tags||{},pts=e.geometry.map(g=>[g.lat,g.lon]);
+      const st=t.amenity==='school'?{color:'#ffd400',weight:3,dashArray:'6 4',fill:false}:t.leisure?{color:'#3ddc84',weight:2,fillColor:'#3ddc84',fillOpacity:.28}:{color:'#ff9f1a',weight:2,fillColor:'#ff9f1a',fillOpacity:.18};
+      const pg=L.polygon(pts,st).addTo(fl);n++;
+      const nm=t.name||(t.leisure?'운동장·경기장':'');if(nm)pg.bindTooltip(nm,{sticky:true});
+    });
+    if(!n)$('gleg').textContent='이 위치에서 건물·운동장 윤곽 정보를 찾지 못했어요. 위성 사진으로 확인하세요.';
+  }catch(e){fdone='';$('gleg').textContent='윤곽 정보를 불러오지 못했어요. 위성 사진은 그대로 볼 수 있어요.'}
+}
+function gmapInit(){
+  if(typeof L==='undefined'){$('gmap').textContent='지도를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.';return}
+  if(!LM){
+    LM=L.map('gmap',{maxZoom:21}).setView(SCH,18);
+    const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:18,maxZoom:21,attribution:'Tiles &copy; Esri, Maxar, Earthstar Geographics'});
+    const osm=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxNativeZoom:19,maxZoom:21,attribution:'&copy; OpenStreetMap contributors'});
+    sat.addTo(LM);fl=L.layerGroup().addTo(LM);gl=L.layerGroup().addTo(LM);
+    L.control.layers({'위성 사진':sat,'일반 지도':osm},{'건물·운동장 윤곽':fl,'한자 몬스터':gl}).addTo(LM);
+    sm=L.marker(SCH,{icon:L.divIcon({className:'',iconSize:[0,0],html:'<div class="sch">🏫 신도중학교</div>'}),interactive:false}).addTo(LM);
+    LM.on('click',e=>{
+      if(wid!=null&&!far)return;
+      gstop();far=false;
+      const x=(e.latlng.lng-SCH[1])*mPerLng(),y=(e.latlng.lat-SCH[0])*110540;
+      walked+=Math.hypot(x-me[0],y-me[1]);me=[x,y];gmsg('연습 모드: 누른 자리로 이동했어요.');gdraw();
+    });
+    gfeat();
+  }
+  setTimeout(()=>LM.invalidateSize(),60);
+}
+function gtap(p){
+  const d=Math.hypot(p.x-me[0],p.y-me[1]);
+  if(d<=RG){curSpawn=p;meet(D[p.i][2],D[p.i])}else gmsg('한자가 아직 멀어요. '+Math.round(d-RG)+'m 더 가까이 가 보세요.');
+}
+function gdraw(){
+  ensure();
+  let b=null;
+  spawns.forEach(p=>{const dx=p.x-me[0],dy=p.y-me[1],m=Math.hypot(dx,dy);if(!b||m<b.m)b={m,dx,dy}});
+  const w=' · 걸은 거리 '+Math.round(walked)+'m';
+  if(!b)$('gn').textContent='모든 한자를 잡았어요!'+w;
+  else{const a=(Math.atan2(b.dx,b.dy)*180/Math.PI+360)%360;$('gn').textContent='가장 가까운 한자: '+['북','북동','동','남동','남','남서','서','북서'][Math.round(a/45)%8]+'쪽 약 '+Math.round(b.m)+'m'+w}
+  if(!LM)return;
+  gl.clearLayers();
+  spawns.forEach(p=>{
+    const near=Math.hypot(p.x-me[0],p.y-me[1])<=RG;
+    L.marker(toLL(p.x,p.y),{icon:L.divIcon({className:'',iconSize:[0,0],html:'<div class="mk'+(near?' near':'')+'">'+D[p.i][0]+'</div>'})}).on('click',()=>gtap(p)).addTo(gl);
+  });
+  L.circle(toLL(me[0],me[1]),{radius:RG,color:'#fff',weight:2,dashArray:'4 4',fillOpacity:.1,interactive:false}).addTo(gl);
+  L.marker(toLL(me[0],me[1]),{icon:L.divIcon({className:'',iconSize:[0,0],html:'<div class="me"></div>'}),interactive:false,zIndexOffset:1000}).addTo(gl);
+}
+function gupd(lat,lon){
+  const n=[(lon-SCH[1])*mPerLng(),(lat-SCH[0])*110540],dist=Math.hypot(n[0],n[1]);
+  far=dist>400;
+  if(far){gmsg('학교에서 '+Math.round(dist)+'m 떨어져 있어요. 학교 안에서 시작하거나, 지도를 눌러 연습 모드로 이동해 보세요.');return}
+  const d=Math.hypot(n[0]-me[0],n[1]-me[1]);if(d>2)walked+=d;me=n;gmsg('걸어 다니며 지도의 한자를 찾아보세요.');gdraw();
+}
+$('gstart').onclick=()=>{
+  if(!navigator.geolocation||!window.isSecureContext){gmsg('위치 기능은 https 주소에서만 쓸 수 있어요. 지도를 눌러 연습 모드로 이동해 보세요.');return}
+  gstop();far=false;org=SCH;me=[0,0];spawns=[];walked=0;gmsg('위치를 찾는 중이에요...');gdraw();
+  wid=navigator.geolocation.watchPosition(p=>gupd(p.coords.latitude,p.coords.longitude),()=>gmsg('위치를 가져오지 못했어요. 위치 권한을 허용하거나 지도를 눌러 연습 모드로 이동해 보세요.'),{enableHighAccuracy:true,maximumAge:1000});
+};
+$('grst').onclick=()=>{gstop();far=false;me=[0,0];if(LM)LM.setView(SCH,18);gmsg('학교 중심으로 이동했어요.');gdraw()};
+$('gmap').onclick=null;
+{const ks=Object.keys(L);D.forEach((d,i)=>{d[2]=ks[Math.floor(i*ks.length/D.length)]})}
+const D0=D.map(d=>d.slice());
+const dflt=JSON.stringify(D0.map(d=>[d[0],d[1],d[3]||'']));
+const rowsOf=()=>D.map(d=>[d[0],d[1],d[3]||'']);
+const isCustom=()=>JSON.stringify(rowsOf())!==dflt;
+const encL=r=>btoa(unescape(encodeURIComponent(JSON.stringify(r)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const decL=t=>JSON.parse(decodeURIComponent(escape(atob(t.replace(/-/g,'+').replace(/_/g,'/')))));
+const okL=r=>Array.isArray(r)&&r.length>=4&&r.length<=60&&r.every(x=>Array.isArray(x)&&x[0]&&x[1]);
+function applyD(rows){
+  const keys=Object.keys(L),N=rows.length;
+  D.length=0;rows.forEach((r,i)=>D.push([String(r[0]),String(r[1]),keys[Math.floor(i*keys.length/N)],String(r[2]||'')]));
+  got=new Set([...got].filter(c=>D.some(d=>d[0]==c)));save();
+  spawns=[];arH=[];$('arw').innerHTML='';curSpawn=null;arCur=null;
+  $('code').placeholder='카드 번호 (01~'+String(N).padStart(2,'0')+')';
+  head();map();dex();if(LM)gdraw();
+}
+function saveL(rows){try{localStorage.setItem('hanja-list',JSON.stringify(rows))}catch(e){}}
+function parseL(txt){
+  const out=[],bad=[],seen=new Set();
+  txt.split(/\r?\n/).forEach((ln,i)=>{
+    if(!ln.trim())return;
+    const m=/^\s*([^,\t|\s]{1,2})\s*[,\t|]\s*([^,\t|]+?)\s*(?:[,\t|]\s*(.*?))?\s*$/.exec(ln);
+    if(!m||seen.has(m[1])){bad.push(i+1);return}
+    seen.add(m[1]);out.push([m[1],m[2],m[3]||'']);
+  });
+  return{out,bad};
+}
+function chk(){
+  const r=parseL($('h_t').value);
+  $('h_m').textContent=r.out.length+'개 인식'+(r.bad.length?' · 확인이 필요한 줄(형식 오류나 중복): '+r.bad.join(', '):'')+(r.out.length<4?' · 최소 4개가 필요해요':'');
+  return r;
+}
+function showL(rows){$('h_t').value=rows.map(r=>r[2]?r.join(', '):r[0]+', '+r[1]).join('\n');chk()}
+try{
+  const q=new URLSearchParams(location.search);
+  if(q.has('list')){const r=decL(q.get('list'));if(okL(r)){saveL(r);applyD(r)}}
+  else{const r=JSON.parse(localStorage.getItem('hanja-list')||'null');if(okL(r))applyD(r)}
+}catch(e){}
+$('s_hj').onclick=()=>{showL(rowsOf());$('hj').classList.add('show')};
+$('h_t').oninput=chk;
+$('h_ok').onclick=()=>{
+  const r=chk();
+  if(r.out.length<4||r.out.length>60||r.bad.length)return;
+  saveL(r.out);applyD(r.out);$('s_l').value=mkLink(rd(),true);$('hj').classList.remove('show');
+};
+$('h_d').onclick=()=>showL(D0.map(d=>[d[0],d[1],d[3]||'']));
+$('h_x').onclick=()=>$('hj').classList.remove('show');
+function hookUI(){$('sb').hidden=!S.hook}
+function sendR(){
+  if(!S.hook)return;
+  const name=$('sn').value.trim();
+  if(!name){$('sm').textContent='이름(또는 번호)을 먼저 적어 주세요.';return}
+  try{localStorage.setItem('hanja-me',name)}catch(e){}
+  $('sm').textContent='보내는 중...';
+  fetch(S.hook,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({name,caught:got.size,total:D.length,chars:[...got].join(''),sess})})
+    .then(()=>{$('sm').textContent='전송했어요 ('+new Date().toLocaleTimeString('ko-KR')+'). 선생님 시트에 반영돼요.'})
+    .catch(()=>{$('sm').textContent='보내지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.'});
+}
+$('sg').onclick=sendR;
+try{$('sn').value=localStorage.getItem('hanja-me')||''}catch(e){}
+hookUI();
+window.addEventListener("hashchange",hash);
+head();map();dex();hash();
+</script>
+</body>
+</html>
